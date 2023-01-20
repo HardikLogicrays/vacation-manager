@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+
+  web:
+    build: .
+    # image: hardiklogicrays/vacation_manager_backend:latest
+    container_name: website
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - db
+    command: >
+      sh -c "
+             echo -e '\n\n-------------Migrations Start ---------------------\n\n' &&
+             python manage.py makemigrations &&
+             python manage.py migrate &&
+             echo -e '\n\n-------------Test Cases Start ---------------------\n\n' &&
+             python manage.py test &&
+             echo -e '\n\n-------------Server Start ---------------------\n\n' &&
+             python manage.py runserver 0.0.0.0:8000" &&
+             
+
+  db:
+    image: postgres
+    container_name: database
+
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
