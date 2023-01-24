@@ -78,7 +78,6 @@ export default function AutoGrid() {
     const [data, setData] = useState();
     const [error, setError] = useState(false);
 
-    const tokenValue = localStorage.getItem('token');
 
     const handleClickShowPassword = () => {
         setValues({ ...values, showPassword: !values.showPassword });

@@ -51,18 +51,22 @@ class UserLoginSerializer(serializers.Serializer):
 class HolidayCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Holiday
-        fields = ["title", "start_date", "end_date"]
+        fields = ["title", "start_date", "end_date", "color"]
 
     def validate(self, attrs):
 
         if "start_date" not in attrs and "end_date" not in attrs:
-            raise serializers.ValidationError("Start Date and End Date is required.")
+            raise serializers.ValidationError(
+                "Start Date and End Date is required.")
 
         if "start_date" not in attrs:
             raise serializers.ValidationError("Start Date is required.")
 
         if "end_date" not in attrs:
             raise serializers.ValidationError("End Date is required.")
+
+        if "color" not in attrs:
+            raise serializers.ValidationError("Color is required.")
 
         start_date = attrs["start_date"]
         end_date = attrs["end_date"]
@@ -87,36 +91,35 @@ class HolidayCreateSerializer(serializers.ModelSerializer):
                 "Ending Date should come after Starting Date."
             )
 
+        if not attrs['color']:
+            raise serializers.ValidationError("Color field is required.")
+
         # 2 Month Date Validation
 
         date_after_2_months = current_date + relativedelta(months=+2)
 
         if (start_date > date_after_2_months) and (end_date > date_after_2_months):
-            raise serializers.ValidationError("Dates after 2 months are not allowed.")
+            raise serializers.ValidationError(
+                "Dates after 2 months are not allowed.")
         if start_date > date_after_2_months:
-            raise serializers.ValidationError("Date after 2 months is allowed.")
+            raise serializers.ValidationError(
+                "Date after 2 months is allowed.")
         if end_date > date_after_2_months:
-            raise serializers.ValidationError("Date after 2 months is not allowed.")
+            raise serializers.ValidationError(
+                "Date after 2 months is not allowed.")
 
         return attrs
 
     def create(self, validated_data):
 
         user = self.context["request"].user
-      
-
-        import random
-
-        random_number = random.randint(0, 16777215)
-        hex_number = str(hex(random_number))
-        hex_number = "#" + hex_number[2:]
 
         create_request = Holiday.objects.create(
             email=user,
             title=validated_data["title"],
             start_date=validated_data["start_date"],
             end_date=validated_data["end_date"],
-            color=hex_number
+            color=validated_data["color"]
         )
 
         create_request.save()
@@ -141,7 +144,7 @@ class HolidayGetFilterSerializer(serializers.Serializer):
         end_date = attrs["end_date"]
 
         if start_date > end_date:
-            raise serializers.ValidationError("Start date is not bigger than End date.")
+            raise serializers.ValidationError(
+                "Start date is not bigger than End date.")
 
         return attrs
-

@@ -20,7 +20,8 @@ class TestViews(TestSetUp):
         holiday_data = {
             "title": "title 1",
             "start_date": "2023-02-18",
-            "end_date": "2023-02-20"
+            "end_date": "2023-02-20",
+            "color": "#C1C249"
         }
 
         create_holiday = self.client.post(path=self.holidays_url, data=holiday_data, HTTP_AUTHORIZATION=f"Token {self.token}",

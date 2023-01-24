@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { TextField, Button, DialogActions, Grid, Stack } from "@mui/material";
-import dayjs from 'dayjs';
+import { TextField, Button, DialogActions, Grid } from "@mui/material";
+
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -8,6 +8,8 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 const EventForm = ({ scheduler }) => {
     const event = scheduler.edited;
     const [createData, setCreateData] = useState(undefined);
+    const [error, setError] = useState(false);
+    const [expiredToken, setExpiredToken] = useState(false);
 
     const tokenValue = localStorage.getItem('token');
 
@@ -16,7 +18,6 @@ const EventForm = ({ scheduler }) => {
         start: event?.start || "",
         end: event?.end || "",
     });
-    const [error, setError] = useState("");
 
     const handleChange = (value, name) => {
         setState((prev) => {
@@ -25,7 +26,16 @@ const EventForm = ({ scheduler }) => {
                 [name]: value
             };
         });
+
+
+        if (state.title.length < 3 || !state.start || !state.end) {
+            setError(true);
+        }
+
+        setError(false);
     };
+
+    const randomColor = Math.floor(Math.random()*16777215).toString(16);
 
     let myHeaders = new Headers();
     myHeaders.append("Authorization", `Token ${tokenValue}`);
@@ -44,7 +54,7 @@ const EventForm = ({ scheduler }) => {
 
         fetch(`${process.env.REACT_APP_BASE_API_URL}holidays/`, requestOptions)
             .then(response => response.text())
-            .then(result => console.log(result))
+            .then(result => setExpiredToken(JSON.parse(result).errors?.token))
             .catch(error => console.log('error', error));
     }
 
@@ -52,29 +62,53 @@ const EventForm = ({ scheduler }) => {
         createData && holidaysCreate();
     }, [createData]);
 
-    const handleSubmit = async () => {
-
-        if (state.title.length < 3) {
-            return setError("Min 3 letters");
+    useEffect(() => {
+        if (expiredToken) {
+            window.location.href = '/';
+            localStorage.removeItem('token');
         }
+    }, [expiredToken]);
+
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+    
+        if (month.length < 2) 
+            month = '0' + month;
+        if (day.length < 2) 
+            day = '0' + day;
+    
+        return [year, month, day].join('-');
+    }
+
+    const handleSubmit = async () => {
+        if (state.title.length < 3 || !state.start || !state.end) {
+            return setError(true);
+        }
+
+        setError(false);
 
         try {
             scheduler.loading(true);
-
             const added_updated_event = (await new Promise((res) => {
+
                 setTimeout(() => {
                     res({
                         event_id: event?.event_id || Math.random(),
                         title: state?.title,
                         start: state?.start,
-                        end: state?.end
+                        end: state?.end,
+                        color: `#${randomColor}`
                     });
                 }, 3000);
 
                 setCreateData({
+                    color: `#${randomColor}`,
                     title: state.title,
-                    start_date: state.start?.toISOString().split('T')[0],
-                    end_date: state.end?.toISOString().split('T')[0]
+                    start_date: formatDate(state.start),
+                    end_date: formatDate(state.end)
                 });
             }));
 
@@ -85,9 +119,15 @@ const EventForm = ({ scheduler }) => {
         }
     };
 
+    
     let afterTwoMonths = new Date();
 
     afterTwoMonths.setMonth(afterTwoMonths.getMonth() + 2);
+
+
+    let day = new Date();
+    let nextDay = new Date();
+    nextDay.setDate(day.getDate() + 1);
 
     return (
         <div>
@@ -101,8 +141,8 @@ const EventForm = ({ scheduler }) => {
                             name="title"
                             value={state.title}
                             onChange={(e) => handleChange(e.target.value, "title")}
-                            error={!!error}
-                            helperText={error}
+                            error={(!state.title && error) && error}
+                            helperText={(!state.title && error) && "Please enter title"}
                             fullWidth
                         />
                     </Grid>
@@ -113,10 +153,11 @@ const EventForm = ({ scheduler }) => {
                                 label="Start"
                                 name="start"
                                 value={state.start ? state.start : null}
-                                minDate={new Date()}
+                                minDate={nextDay}
                                 maxDate={afterTwoMonths}
                                 onChange={(newValue) => handleChange(newValue, "start")}
-                                renderInput={(params) => <TextField fullWidth required {...params} />}
+                                renderInput={(params) => <TextField fullWidth required {...params} error={(!state.start && error) && error}
+                                helperText={(!state.start && error) && "Please select date."}/>}
                             />
                         </Grid>
 
@@ -125,10 +166,11 @@ const EventForm = ({ scheduler }) => {
                                 label="End"
                                 name="end"
                                 value={state.end ? state.end : null}
-                                minDate={state.start ? state.start : new Date()}
+                                minDate={state.start ? state.start : nextDay}
                                 maxDate={afterTwoMonths}
                                 onChange={(newValue) => handleChange(newValue, "end")}
-                                renderInput={(params) => <TextField fullWidth required {...params} />}
+                                renderInput={(params) => <TextField fullWidth required {...params} error={(!state.end && error) && error}
+                                helperText={(!state.end && error) && "Please select date."}/>}
                             />
                         </Grid>
                     </LocalizationProvider>

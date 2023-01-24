@@ -58,7 +58,8 @@ class LoginUserView(APIView):
 
         serializer = UserLoginSerializer(data=data)
         if serializer.is_valid():
-            check_user = authenticate(email=data["email"], password=data["password"])
+            check_user = authenticate(
+                email=data["email"], password=data["password"])
 
             if check_user:
                 token, _ = Token.objects.get_or_create(user=check_user)
@@ -75,7 +76,8 @@ class LoginUserView(APIView):
             }
             return Response(response, status=response["status"])
 
-        response = {"status": status.HTTP_400_BAD_REQUEST, "errors": serializer.errors}
+        response = {"status": status.HTTP_400_BAD_REQUEST,
+                    "errors": serializer.errors}
         return Response(response, status=response["status"])
 
 
@@ -95,7 +97,8 @@ class LogoutUserView(APIView):
                 }
                 return Response(response, response["status"])
             delete_token.delete()
-            response = {"status": status.HTTP_200_OK, "msg": "Logout Successfully."}
+            response = {"status": status.HTTP_200_OK,
+                        "msg": "Logout Successfully."}
             return Response(response, status=response["status"])
 
 
@@ -145,7 +148,9 @@ class HolidayView(APIView):
             )
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
-                response = {"status": status.HTTP_200_OK, "data": serializer.data}
+
+                response = {"status": status.HTTP_200_OK,
+                            "data": serializer.data}
                 return Response(response, status=response["status"])
             else:
                 response = {

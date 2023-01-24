@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+
+  db:
+    image: postgres
+    container_name: database_container
+
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+
+
+  frontend_service:
+
+    container_name: frontend_container
+    build:
+      context: ./Vacation_forntend/
+      dockerfile: Dockerfile
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      - REACT_APP_BASE_API_URL=http://127.0.0.1:8000/api/
+    depends_on:
+      - backend_service
+    command : npm start &
+
+
+
+  
+  backend_service:
+
+    build:
+      context: ./Vacation_backend/
+      dockerfile: Dockerfile
+    # image: hardiklogicrays/vacation_manager_backend:latest
+    container_name: backend_container
+    ports:
+      - "8000:8000"
+   
+    depends_on:
+      - db
+    environment:
+      - DJANGO_SUPERUSER_PASSWORD=admin
+      - DJANGO_SUPERUSER_EMAIL=admin@admin.com
+    command: >
+      sh -c "
+             echo -e '\n\n------------- Migrations Start ---------------------\n\n' &&
+
+             python manage.py makemigrations &&
+             python manage.py migrate &&
+             
+             echo -e '\n\n------------- Test Cases Start ---------------------\n\n' &&
+             python manage.py test &&
+             
+             echo -e '\n\n------------- Creating Superuser ---------------------\n\n' &&
+             python manage.py createsuperuser --noinput --email $$DJANGO_SUPERUSER_EMAIL || echo -e 'Superuser already created.'
+             
+             echo -e '\n\n------------- Server Start ---------------------\n\n' &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  
